@@ -2,8 +2,8 @@ name: Discord Invite Monitor
 
 on:
   schedule:
-    # 每 5 分钟在云端自动检测一次
-    - cron: '*/5 * * * *'
+    # 错峰运行：每小时的 3分、13分、23分、33分、43分、53分在云端自动检测
+    - cron: '3,13,23,33,43,53 * * * *'
   workflow_dispatch: # 支持手动点击测试
 
 jobs:
