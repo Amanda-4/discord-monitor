@@ -2,9 +2,9 @@ name: Discord Invite Monitor
 
 on:
   schedule:
-    # 每 5 分钟在云端自动运行一次
+    # 每 5 分钟自动运行一次
     - cron: '*/5 * * * *'
-  workflow_dispatch: # 允许你在网页上手动点击测试
+  workflow_dispatch: # 支持手动点击测试
 
 jobs:
   check-invite:
@@ -12,16 +12,21 @@ jobs:
     steps:
       - name: Check Discord Invite Status
         run: |
-          # 请求 Discord API
-          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" "https://discord.com/api/v9/invites/elysianhorizon")
-          echo "Current HTTP Code: $HTTP_CODE"
+          # 1. 模拟正常浏览器请求 Discord API，保存响应与 HTTP 状态码
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o response.json \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            "https://discord.com/api/v9/invites/elysianhorizon")
+
+          echo "HTTP Status Code: $HTTP_CODE"
+          echo "Response Body:"
           cat response.json
-          
-          # 判断条件：目前关闭时返回 404 (Unknown Invite)
-          # 只要状态码不是 404，说明邀请已经开放
-          if [ "$HTTP_CODE" -ne 404 ]; then
-            echo "Invite opened! Sending Bark alert..."
+          echo ""
+
+          # 2. 精确防误报判断：
+          # 只有当 HTTP 状态码为 200，且响应中不再包含 10006（Unknown Invite）时，才确认为有效邀请
+          if [ "$HTTP_CODE" -eq 200 ] && ! grep -q "10006" response.json; then
+            echo "SUCCESS: Invite is OPEN! Sending Bark notification..."
             curl -s "https://api.day.app/9waVKMEhyRHfLrDuRHFZ9f/%E9%82%80%E8%AF%B7%E5%B7%B2%E5%BC%80%E6%94%BE/%E7%AB%8B%E5%8D%B3%E5%89%8D%E5%BE%80Discord%E6%8E%A5%E5%8F%97%E9%82%80%E8%AF%B7?sound=alarm&level=critical&volume=10"
           else
-            echo "Still closed. Nothing sent."
+            echo "STATUS: Invite is still closed or blocked. No alert sent."
           fi
