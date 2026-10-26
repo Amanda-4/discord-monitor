@@ -22,11 +22,12 @@ jobs:
           cat response.json
           echo ""
 
-          # 2. 状态码为 200 且没有 10006 判定为开放
-            if [ "$HTTP_CODE" -eq 404 ]; then
+          # 2. 核心精确判断：
+          # 状态码为 200，且返回数据中不再包含 "INVITES_DISABLED"，说明邀请真正开放！
+          if [ "$HTTP_CODE" -eq 200 ] &&  grep -q "INVITES_DISABLED" response.json; then
             echo "SUCCESS: Invite is OPEN! Triggering repeated Bark alerts..."
             
-            # 连发 3 次，每次留足 12 秒让当前旋律完整播放，避免互相掐断
+            # 连发 3 次，每次留足 12 秒让当前旋律完整播放
             for i in 1 2 3
             do
               echo "Sending alert #$i..."
@@ -34,5 +35,7 @@ jobs:
               sleep 12
             done
           else
+            echo "STATUS: Invites are still DISABLED. No alert sent."
+          fi
             echo "STATUS: Invite is still closed or blocked. No alert sent."
           fi
