@@ -37,5 +37,3 @@ jobs:
           else
             echo "STATUS: Invites are still DISABLED. No alert sent."
           fi
-            echo "STATUS: Invite is still closed or blocked. No alert sent."
-          fi
