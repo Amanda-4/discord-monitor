@@ -23,7 +23,7 @@ jobs:
           echo ""
 
           # 2. 状态码为 200 且没有 10006 判定为开放
-          if [ "$HTTP_CODE" -eq 200 ] && ! grep -q "10006" response.json; then
+            if [ "$HTTP_CODE" -eq 404 ]; then
             echo "SUCCESS: Invite is OPEN! Triggering repeated Bark alerts..."
             
             # 连发 3 次，每次留足 12 秒让当前旋律完整播放，避免互相掐断
