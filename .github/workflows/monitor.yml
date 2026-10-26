@@ -2,7 +2,7 @@ name: Discord Invite Monitor
 
 on:
   schedule:
-    # 每 5 分钟自动运行一次
+    # 每 5 分钟在云端自动检测一次
     - cron: '*/5 * * * *'
   workflow_dispatch: # 支持手动点击测试
 
@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Check Discord Invite Status
         run: |
-          # 1. 模拟正常浏览器请求 Discord API，保存响应与 HTTP 状态码
+          # 1. 模拟正常浏览器发起请求
           HTTP_CODE=$(curl -s -w "%{http_code}" -o response.json \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
             "https://discord.com/api/v9/invites/elysianhorizon")
@@ -22,11 +22,17 @@ jobs:
           cat response.json
           echo ""
 
-          # 2. 精确防误报判断：
-          # 只有当 HTTP 状态码为 200，且响应中不再包含 10006（Unknown Invite）时，才确认为有效邀请
+          # 2. 状态码为 200 且没有 10006 判定为开放
           if [ "$HTTP_CODE" -eq 200 ] && ! grep -q "10006" response.json; then
-            echo "SUCCESS: Invite is OPEN! Sending Bark notification..."
-            curl -s "https://api.day.app/9waVKMEhyRHfLrDuRHFZ9f/%E9%82%80%E8%AF%B7%E5%B7%B2%E5%BC%80%E6%94%BE/%E7%AB%8B%E5%8D%B3%E5%89%8D%E5%BE%80Discord%E6%8E%A5%E5%8F%97%E9%82%80%E8%AF%B7?sound=alarm&level=critical&volume=10"
+            echo "SUCCESS: Invite is OPEN! Triggering repeated Bark alerts..."
+            
+            # 连发 3 次，每次留足 12 秒让当前旋律完整播放，避免互相掐断
+            for i in 1 2 3
+            do
+              echo "Sending alert #$i..."
+              curl -s "https://api.day.app/9waVKMEhyRHfLrDuRHFZ9f/%E9%82%80%E8%AF%B7%E5%B7%B2%E5%BC%80%E6%94%BE%EF%BC%81/%E7%AC%AC${i}%E6%AC%A1%E6%8F%90%E9%86%92%EF%BC%9A%E7%AB%8B%E5%8D%B3%E5%89%8D%E5%BE%80Discord%E6%8E%A5%E5%8F%97%E9%82%80%E8%AF%B7?sound=minuet&level=critical&volume=10"
+              sleep 12
+            done
           else
             echo "STATUS: Invite is still closed or blocked. No alert sent."
           fi
